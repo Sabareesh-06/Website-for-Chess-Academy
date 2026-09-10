@@ -1,0 +1,132 @@
+/* =====================================================
+   GOLDEN CHESS ACADEMY - COMPLETE DATABASE (30mm)
+   Fresh install: deletes old tables and recreates them.
+   Collation: utf8mb4_general_ci (avoids the
+   "illegal mix of collations" error you had before)
+===================================================== */
+
+CREATE DATABASE IF NOT EXISTS 30mm
+  CHARACTER SET utf8mb4
+  COLLATE utf8mb4_general_ci;
+USE 30mm;
+
+DROP TABLE IF EXISTS comment_reactions;
+DROP TABLE IF EXISTS comments;
+DROP TABLE IF EXISTS puzzle_point_awards;
+DROP TABLE IF EXISTS puzzles;
+DROP TABLE IF EXISTS certificate_view_logs;
+DROP TABLE IF EXISTS messages;
+DROP TABLE IF EXISTS register;
+
+/* ---------------- USERS (login/register/master/student/
+   studentProfile/certificate/inbox all use this) -------- */
+CREATE TABLE register (
+    ID INT AUTO_INCREMENT PRIMARY KEY,
+    Username VARCHAR(100) NOT NULL UNIQUE,
+    Password VARCHAR(255) NOT NULL,
+    Name VARCHAR(150) NOT NULL,
+    Email VARCHAR(150) NULL,
+    DOB DATE NULL,
+    age VARCHAR(10) NULL,
+    school VARCHAR(150) NULL,
+    phone VARCHAR(30) NULL,
+    rating VARCHAR(50) NULL,
+    quotes TEXT NULL,
+    role VARCHAR(50) NOT NULL DEFAULT 'student',
+    active TINYINT(1) NOT NULL DEFAULT 1,
+    points INT NOT NULL DEFAULT 0,
+    profile_image VARCHAR(255) NOT NULL DEFAULT 'images/chess.jpeg',
+    birth_certificate VARCHAR(255) NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+/* ---------------- INBOX / MESSAGES ---------------- */
+CREATE TABLE messages (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    sender VARCHAR(100) NOT NULL,
+    receiver VARCHAR(100) NOT NULL,
+    message TEXT NOT NULL,
+    type VARCHAR(20) NOT NULL DEFAULT 'private',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_deleted TINYINT(1) NOT NULL DEFAULT 0,
+    deleted_by VARCHAR(100) NULL,
+    deleted_at TIMESTAMP NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+/* ---------------- PUZZLES ---------------- */
+CREATE TABLE puzzles (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    description TEXT NULL,
+    image VARCHAR(255) NOT NULL,
+    created_by VARCHAR(100) NULL,
+    created_by_id INT NULL,
+    created_by_role VARCHAR(50) NULL,
+    points_awarded TINYINT(1) NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+/* ---------------- PUZZLE COMMENTS ---------------- */
+CREATE TABLE comments (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    puzzle_id INT NOT NULL,
+    parent_id INT NULL,
+    user_name VARCHAR(100) NOT NULL,
+    role VARCHAR(50) NOT NULL,
+    comment_text TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+/* ---------------- COMMENT REACTIONS ---------------- */
+CREATE TABLE comment_reactions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    comment_id INT NOT NULL,
+    user_name VARCHAR(100) NOT NULL,
+    reaction_type VARCHAR(10) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+/* ---------------- CERTIFICATE VIEW LOG ---------------- */
+CREATE TABLE certificate_view_logs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id INT NOT NULL,
+    viewer_id INT NOT NULL,
+    viewer_username VARCHAR(100) NOT NULL,
+    viewer_role VARCHAR(50) NOT NULL,
+    action ENUM('view','download') NOT NULL DEFAULT 'view',
+    viewed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+/* ---------------- PUZZLE POINT AWARDS ---------------- */
+CREATE TABLE puzzle_point_awards (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    puzzle_id INT NOT NULL,
+    student_id INT NOT NULL,
+    awarded_by_id INT NOT NULL,
+    points INT NOT NULL,
+    awarded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_puzzle_award (puzzle_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+/* =====================================================
+   SEED ACCOUNTS
+   Passwords are stored PLAIN so the original login.php
+   (Password = ?) works. If you use the hashed login.php,
+   it will auto-upgrade them to bcrypt on first login.
+===================================================== */
+INSERT INTO register
+(Username, Password, Name, Email, DOB, age, school, phone, rating, quotes, role, active, points, profile_image)
+VALUES
+('admin', 'admin123', 'Administrator', 'baskar@gmail.com', NULL, NULL,
+ 'Golden Chess Academy', '9876543210', '2200', 'Head of the Academy',
+ 'admin', 1, 0, 'images/chess.jpeg'),
+
+('M1', 'm12345', 'Test Master', 'm1@test.com', '1990-01-01', '36',
+ 'FIDE Master', '9999988888', '2400', 'Chess is life.',
+ 'master', 1, 0, 'images/chess.jpeg'),
+
+('T1', 't12345', 'Test Student One', 't1@test.com', '2010-05-15', '16',
+ 'Trichy Chess School', '1111122222', '1200', 'Every Master was once a beginner.',
+ 'student', 1, 0, 'images/chess.jpeg');
+
+/* One announcement so the inbox has data immediately */
+INSERT INTO messages (sender, receiver, message, type)
+VALUES ('admin', 'all', 'Welcome to Golden Chess Academy!', 'public');
